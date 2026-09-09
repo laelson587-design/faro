@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rota — quem visitar hoje</title>
+<meta name="theme-color" content="#101216">
+<link rel="stylesheet" href="estilo.css?v=1">
+</head>
+<body>
+
+<!-- Escolher onde e o quê. Duas perguntas, e nenhuma delas pede CNAE:
+     ninguém sabe que lanchonete é 5611, e quem soubesse não precisaria disto. -->
+<section id="tela-escolha" class="tela ativa">
+  <div class="corpo">
+    <h1>Rota</h1>
+    <p class="chamada">Quem visitar hoje, e por quê.</p>
+
+    <label class="campo">
+      <span class="rotulo">Sua cidade</span>
+      <select id="cidade"><option value="">carregando…</option></select>
+    </label>
+
+    <h3>O que você vende</h3>
+    <div id="profissoes" class="profissoes"></div>
+
+    <button id="buscar" class="principal" disabled>Montar o roteiro</button>
+    <p class="dica" id="peso"></p>
+
+    <p class="dica rodape-fonte">
+      Dados abertos da Receita Federal, empresas <b>ativas</b>.
+      <span id="base-mes"></span>
+      Nada é enviado a lugar nenhum: a busca roda neste aparelho.
+    </p>
+  </div>
+</section>
+
+<!-- O roteiro. Agrupado por bairro porque um dia de visita é um bairro, não
+     uma cidade — e ordenado por rua, para a caminhada fazer sentido. -->
+<section id="tela-rota" class="tela">
+  <header class="topo">
+    <button id="voltar" class="icone" aria-label="Voltar">←</button>
+    <div>
+      <h2 id="rota-titulo"></h2>
+      <p id="rota-sub" class="sub"></p>
+    </div>
+  </header>
+
+  <div class="corpo">
+    <div class="filtros">
+      <label class="campo">
+        <span class="rotulo">Bairro</span>
+        <select id="bairro"></select>
+      </label>
+      <label class="marcavel">
+        <input id="so-telefone" type="checkbox">
+        <span>Só com telefone</span>
+      </label>
+      <label class="marcavel">
+        <input id="so-novas" type="checkbox">
+        <span>Abertas nos últimos 2 anos</span>
+      </label>
+      <label class="marcavel">
+        <input id="esconder-visitadas" type="checkbox" checked>
+        <span>Esconder as que já visitei</span>
+      </label>
+    </div>
+
+    <p id="contagem" class="contagem"></p>
+    <div id="lista"></div>
+    <button id="mais" class="secundario oculto">Mostrar mais</button>
+  </div>
+</section>
+
+<div id="aviso" class="aviso oculto"></div>
+
+<script src="ramos.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>

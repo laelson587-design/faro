@@ -1,0 +1,163 @@
+/* Rota — feito para ser usado em pé, na rua, com uma mão só.
+   Fonte grande, alvo de toque grande, e contraste que sobrevive ao sol. */
+
+:root {
+  --fundo: #101216;
+  --carta: #171a20;
+  --borda: #2c313a;
+  --texto: #eef1f5;
+  --fraco: #aab3c0;
+  --tenue: #7c8593;
+  --sobre-cor: #08101f;
+  --marca: #7aa2ff;
+  --marca-fraca: #172137;
+  --bom: #4bd394;
+  --atencao: #f0b45e;
+  --raio: 14px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tela { display: none; }
+.tela.ativa { display: block; }
+.corpo { padding: 18px 16px 48px; max-width: 720px; margin: 0 auto; }
+.oculto { display: none !important; }
+
+h1 { margin: 8px 0 2px; font-size: 30px; letter-spacing: -0.5px; }
+h2 { margin: 0; font-size: 20px; }
+h3 { margin: 26px 0 10px; font-size: 15px; text-transform: uppercase;
+     letter-spacing: 0.6px; color: var(--fraco); }
+.chamada { margin: 0 0 22px; color: var(--fraco); font-size: 16px; }
+.sub { margin: 2px 0 0; font-size: 14px; color: var(--tenue); }
+
+/* ------------------------------------------------------------- campos */
+
+.campo { display: block; margin: 14px 0; }
+.rotulo {
+  display: block; margin-bottom: 6px; font-size: 13px;
+  text-transform: uppercase; letter-spacing: 0.5px; color: var(--fraco);
+}
+select, input[type="text"], input[type="number"] {
+  width: 100%; font: inherit; font-size: 17px; color: var(--texto);
+  padding: 14px; background: var(--carta);
+  border: 1px solid var(--borda); border-radius: var(--raio);
+}
+select { appearance: none; background-image: none; }
+
+.marcavel {
+  display: flex; align-items: center; gap: 11px;
+  margin: 12px 0; font-size: 15px; color: var(--fraco);
+}
+.marcavel input { width: 22px; height: 22px; flex: none; accent-color: var(--marca); }
+
+button, .secundario {
+  font: inherit; cursor: pointer; text-decoration: none;
+  border-radius: var(--raio); border: 1px solid var(--borda);
+}
+
+.principal {
+  display: block; width: 100%; margin-top: 20px; padding: 16px;
+  font-size: 17px; font-weight: 700;
+  color: var(--sobre-cor); background: var(--marca); border-color: var(--marca);
+}
+.principal:disabled { opacity: 0.4; }
+
+.secundario {
+  display: inline-block; padding: 10px 12px; font-size: 14px; font-weight: 600;
+  color: var(--texto); background: var(--carta);
+}
+.secundario.apagado { color: var(--tenue); font-weight: 400; }
+
+.dica { font-size: 13px; color: var(--tenue); margin: 10px 0 0; }
+.rodape-fonte { margin-top: 34px; line-height: 1.6; }
+
+/* --------------------------------------------------------- profissões */
+
+.profissoes { display: grid; gap: 10px; }
+.profissao {
+  text-align: left; padding: 15px; background: var(--carta);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.profissao .nome { font-size: 17px; font-weight: 700; }
+.profissao .dica { margin: 0; font-size: 13px; color: var(--tenue); }
+.profissao.ativo {
+  border-color: var(--marca); background: var(--marca-fraca);
+}
+.profissao.ativo .nome { color: var(--marca); }
+
+/* ------------------------------------------------------------ o roteiro */
+
+.topo {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: var(--fundo);
+  border-bottom: 1px solid var(--borda);
+}
+.icone {
+  width: 42px; height: 42px; flex: none; font-size: 20px;
+  color: var(--texto); background: transparent; border: none;
+}
+
+.filtros { margin-bottom: 18px; }
+.contagem {
+  margin: 4px 0 0; font-size: 15px; font-weight: 700; color: var(--marca);
+}
+
+.bairro {
+  position: sticky; top: 62px; z-index: 10;
+  margin: 22px -16px 10px; padding: 9px 16px;
+  background: var(--fundo); color: var(--texto);
+  border-bottom: 1px solid var(--borda);
+  font-size: 14px;
+}
+
+.empresa {
+  padding: 14px; margin-bottom: 10px;
+  background: var(--carta); border: 1px solid var(--borda);
+  border-left: 4px solid var(--marca); border-radius: var(--raio);
+}
+/* Visitada não some da tela quando o filtro está desligado: some de cor.
+   Ver o que já foi feito é metade do valor de uma lista de porta. */
+.empresa.visitada { opacity: 0.45; border-left-color: var(--tenue); }
+
+.empresa .nome { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.3; }
+.empresa .ramo { margin: 3px 0 0; font-size: 13px; color: var(--marca); }
+.empresa .endereco { margin: 7px 0 0; font-size: 15px; color: var(--fraco); }
+/* O "porquê" é o que se fala na porta. Vem da tabela do Acervo, e é a
+   diferença entre abrir conversa e oferecer produto. */
+.empresa .porque {
+  margin: 8px 0 0; padding: 8px 10px; font-size: 13px; font-style: italic;
+  color: var(--atencao); background: #241d10; border-radius: 8px;
+}
+.empresa .pe { margin: 8px 0 0; font-size: 13px; color: var(--tenue); }
+.empresa .pe b { color: var(--bom); font-style: normal; }
+
+.acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.acoes > * { flex: 1 1 auto; text-align: center; }
+.acoes .visitar { border-color: var(--bom); color: var(--bom); }
+
+.vazio { color: var(--tenue); text-align: center; padding: 40px 0; }
+#mais { display: block; width: 100%; margin-top: 14px; padding: 14px; }
+
+.aviso {
+  position: fixed; left: 16px; right: 16px; bottom: 20px; z-index: 80;
+  padding: 14px 16px; border-radius: var(--raio); text-align: center;
+  background: var(--texto); color: var(--fundo); font-size: 15px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+}
+
+@media (min-width: 640px) {
+  .profissoes { grid-template-columns: 1fr 1fr; }
+}
+
+/* Empresa sem nome fantasia: o endereço vira o título, porque é o que se lê
+   na fachada. Em peso menor, para não competir com quem tem nome. */
+.empresa .nome.anonima { font-weight: 600; color: var(--fraco); font-size: 16px; }
