@@ -161,8 +161,16 @@ function linhaDeSaida(c) {
     cnaes.set(cod, nome);
   });
 
-  // -- os dez lotes, um por vez
-  const porCidade = new Map();
+  /* -- os dez lotes, um por vez, e RETOMÁVEL.
+   *
+   * Uma noite de download não sobrevive a um notebook que dorme. Em vez de
+   * lutar contra o Windows, o trabalho de cada lote é salvo assim que acaba:
+   * rodar de novo pula o que já foi e continua. O recorte entra no nome do
+   * arquivo parcial porque um progresso de "só SP" não serve para "Brasil". */
+  const recorte = uf || (cidades.length ? cidades.join("_") : "br");
+  const parcialDe = (i) => path.join(CACHE, `parcial-${recorte}-${i}.json`);
+
+  let porCidade = new Map();
   const inicio = Date.now();
   let lidas = 0, guardadas = 0;
 
@@ -170,6 +178,13 @@ function linhaDeSaida(c) {
   for (const i of lotes) {
     const arquivo = `Estabelecimentos${i}.zip`;
     const destino = path.join(CACHE, arquivo);
+
+    if (fs.existsSync(parcialDe(i))) {
+      porCidade = new Map(JSON.parse(fs.readFileSync(parcialDe(i), "utf8")));
+      guardadas = [...porCidade.values()].reduce((s, v) => s + v.length, 0);
+      console.log(`  ${arquivo.padEnd(24)} já processado antes · ${guardadas.toLocaleString("pt-BR")} acumuladas`);
+      continue;
+    }
 
     if (!fs.existsSync(destino)) await baixar(mes, arquivo, destino);
     else console.log(`  ${arquivo.padEnd(24)} já estava aqui`);
@@ -190,7 +205,17 @@ function linhaDeSaida(c) {
       guardadas++;
     });
 
-    console.log(`  ${" ".repeat(24)} +${(guardadas - antes).toLocaleString("pt-BR")} empresas`);
+    /* Guarda o resultado DESTE lote antes de seguir. É o que permite fechar o
+       notebook, o Windows dormir no meio, e amanhã continuar de onde parou em
+       vez de recomeçar sete GB. Custa um arquivo temporário do tamanho do que
+       já foi filtrado — muito menos que o zip que acabou de ser apagado. */
+    fs.writeFileSync(parcialDe(i), JSON.stringify([...porCidade]));
+    // Cada parcial já contém tudo o que veio antes, então o anterior vira
+    // peso morto. Sem apagar, dez deles somariam mais de um giga.
+    for (const j of lotes) {
+      if (j !== i && fs.existsSync(parcialDe(j))) fs.unlinkSync(parcialDe(j));
+    }
+    console.log(`  ${" ".repeat(24)} +${(guardadas - antes).toLocaleString("pt-BR")} empresas · progresso salvo`);
 
     // Apaga antes do próximo: sete GB não cabem juntos, e não precisam.
     if (!process.env.GUARDAR_LOTES) fs.unlinkSync(destino);
@@ -253,6 +278,12 @@ function linhaDeSaida(c) {
     }
   }
   fs.writeFileSync(path.join(SAIDA, "cnaes.json"), JSON.stringify(usados));
+
+  // Deu certo até aqui: o progresso parcial já não serve para nada, e ficaria
+  // fazendo a próxima rodada pular lotes que precisam ser refeitos.
+  for (const j of lotes) {
+    if (fs.existsSync(parcialDe(j))) fs.unlinkSync(parcialDe(j));
+  }
 
   const seg = ((Date.now() - inicio) / 1000).toFixed(0);
   const totalBytes = indice.reduce((s, c) => s + c.bytes, 0);
