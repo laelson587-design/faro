@@ -57,8 +57,11 @@ function pedir(caminho, opcoes = {}) {
           baixado += d.length;
           if (total && opcoes.aoAndar) opcoes.aoAndar(baixado, total);
         });
+        // A conexão pode morrer no meio; sem este ouvinte o erro vira exceção
+        // solta e derruba o processo em vez de virar uma nova tentativa.
+        r.on("error", erro);
         r.pipe(saida);
-        saida.on("finish", () => ok({ status: r.statusCode }));
+        saida.on("finish", () => ok({ status: r.statusCode, esperado: total }));
         saida.on("error", erro);
         return;
       }
@@ -82,20 +85,54 @@ async function mesMaisNovo() {
   return [...new Set(meses)].sort().pop();
 }
 
-async function baixar(mes, arquivo, destino) {
+/**
+ * Baixa um lote, com duas proteções que custaram uma noite para aparecer.
+ *
+ * PRIMEIRA: baixa para um nome temporário e só renomeia no fim. Sem isso, uma
+ * queda no meio deixava um zip pela metade com o nome certo — e a rodada
+ * seguinte via que o arquivo "existia", pulava o download e tentava ler um
+ * arquivo truncado. Falha silenciosa é pior que falha barulhenta.
+ *
+ * SEGUNDA: tenta de novo. Uma conexão de duas horas tropeça, e derrubar todo
+ * o trabalho por um ECONNRESET é desperdício — foi exatamente o que aconteceu
+ * no lote 3 da primeira noite.
+ */
+async function baixar(mes, arquivo, destino, tentativas = 5) {
   const rotulo = arquivo.padEnd(24);
-  let ultimo = 0;
-  await pedir(`/public.php/webdav/${mes}/${arquivo}`, {
-    para: destino,
-    aoAndar: (b, t) => {
-      const pct = Math.floor((b / t) * 100);
-      if (pct >= ultimo + 10) {
-        ultimo = pct;
-        process.stdout.write(`\r  ${rotulo} ${String(pct).padStart(3)}%`);
+  const temporario = destino + ".baixando";
+
+  for (let n = 1; n <= tentativas; n++) {
+    let ultimo = 0;
+    try {
+      const r = await pedir(`/public.php/webdav/${mes}/${arquivo}`, {
+        para: temporario,
+        aoAndar: (b, t) => {
+          const pct = Math.floor((b / t) * 100);
+          if (pct >= ultimo + 10) {
+            ultimo = pct;
+            process.stdout.write(`\r  ${rotulo} ${String(pct).padStart(3)}%${
+              n > 1 ? ` (tentativa ${n})` : ""}`);
+          }
+        },
+      });
+
+      // Só aceita o que chegou inteiro. O servidor diz o tamanho; se o que
+      // caiu no disco não bater, não presta.
+      if (r.esperado && fs.statSync(temporario).size !== r.esperado) {
+        throw new Error(`veio incompleto: ${fs.statSync(temporario).size} de ${r.esperado}`);
       }
-    },
-  });
-  process.stdout.write(`\r  ${rotulo} pronto (${(fs.statSync(destino).size / 1048576).toFixed(0)} MB)\n`);
+
+      fs.renameSync(temporario, destino);
+      process.stdout.write(`\r  ${rotulo} pronto (${(fs.statSync(destino).size / 1048576).toFixed(0)} MB)\n`);
+      return;
+    } catch (e) {
+      if (fs.existsSync(temporario)) fs.unlinkSync(temporario);
+      if (n === tentativas) throw e;
+      const espera = n * 15;
+      process.stdout.write(`\r  ${rotulo} caiu (${e.message}) · tenta de novo em ${espera}s\n`);
+      await new Promise((r) => setTimeout(r, espera * 1000));
+    }
+  }
 }
 
 // ----------------------------------------------------------------- filtro
@@ -174,17 +211,30 @@ function linhaDeSaida(c) {
   const inicio = Date.now();
   let lidas = 0, guardadas = 0;
 
-  console.log(`\nEstabelecimentos (lotes ${lotes.join(", ")})`);
-  for (const i of lotes) {
+  /* Cada parcial é CUMULATIVO — contém tudo o que veio antes dele. Então
+   * retomar é achar o mais adiantado que existe e continuar do seguinte.
+   *
+   * Percorrer lote a lote procurando o parcial de cada um, como eu fiz
+   * primeiro, dava errado feio: com só o parcial do lote 2 em disco, o laço
+   * reprocessava o 0 e o 1 e, ao salvar o progresso deles, APAGAVA o parcial
+   * do 2. O trabalho da noite ia embora justamente na hora de retomá-lo. */
+  let retomar = 0;
+  for (let k = lotes.length - 1; k >= 0; k--) {
+    if (fs.existsSync(parcialDe(lotes[k]))) {
+      porCidade = new Map(JSON.parse(fs.readFileSync(parcialDe(lotes[k]), "utf8")));
+      guardadas = [...porCidade.values()].reduce((s, v) => s + v.length, 0);
+      retomar = k + 1;
+      console.log(`\nRetomando: lotes ${lotes.slice(0, retomar).join(", ")} já feitos`
+        + ` · ${guardadas.toLocaleString("pt-BR")} empresas acumuladas`);
+      break;
+    }
+  }
+
+  const falta = lotes.slice(retomar);
+  console.log(`\nEstabelecimentos (faltam os lotes ${falta.join(", ") || "nenhum"})`);
+  for (const i of falta) {
     const arquivo = `Estabelecimentos${i}.zip`;
     const destino = path.join(CACHE, arquivo);
-
-    if (fs.existsSync(parcialDe(i))) {
-      porCidade = new Map(JSON.parse(fs.readFileSync(parcialDe(i), "utf8")));
-      guardadas = [...porCidade.values()].reduce((s, v) => s + v.length, 0);
-      console.log(`  ${arquivo.padEnd(24)} já processado antes · ${guardadas.toLocaleString("pt-BR")} acumuladas`);
-      continue;
-    }
 
     if (!fs.existsSync(destino)) await baixar(mes, arquivo, destino);
     else console.log(`  ${arquivo.padEnd(24)} já estava aqui`);
