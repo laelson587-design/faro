@@ -6,3 +6,8 @@
 # passa de um giga, mesmo o site publicado tendo 500 MB. Ficam de fora daqui e
 # são publicados à parte.
 dados/
+
+# Perfil temporario que o gerador de icone cria para o Chrome rasterizar o SVG.
+# Entrou num commit por descuido: sao centenas de arquivos de banco de dados
+# do navegador, que nao tem nada a ver com o projeto.
+.chrome-icone/
