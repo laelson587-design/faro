@@ -1,9 +1,12 @@
-# Rota
+# Faro
 
 Quem visitar hoje, e por quê.
 
+O nome é o que o app entrega: **ter faro** é enxergar onde vale a pena bater.
+Você não compra uma lista — compra a capacidade de farejar quem abre a porta.
+
 O [Acervo](../Acervo) responde *"o que é esta empresa"* — você traz o CNPJ. O
-Rota responde a pergunta de antes: **"quais empresas"**. Para quem vende de
+Faro responde a pergunta de antes: **"quais empresas"**. Para quem vende de
 porta em porta e não tem lista nenhuma.
 
 ```

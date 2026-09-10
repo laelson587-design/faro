@@ -1,0 +1,16 @@
+{
+  "name": "Faro — quem visitar hoje",
+  "short_name": "Faro",
+  "description": "Acha as empresas que vale a pena visitar, e monta o roteiro do dia.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101216",
+  "theme_color": "#101216",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icone-192.png?v=4", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icone-512.png?v=4", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

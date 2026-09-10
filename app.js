@@ -1,4 +1,4 @@
-/* Rota — monta o roteiro de visita do dia, no aparelho de quem pesquisa.
+/* Faro — monta o roteiro de visita do dia, no aparelho de quem pesquisa.
  *
  * Não há servidor. O app baixa um arquivo de texto da cidade escolhida e faz
  * tudo daí para frente aqui dentro: filtrar, agrupar, ordenar, marcar. Isso é
@@ -22,7 +22,7 @@ const POR_VEZ = 60;          // quantas mostra antes de "mostrar mais"
  * que continue assim, para dar para mexer sem depender da internet. */
 const DADOS = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname)
   ? "dados"
-  : "https://laelson587-design.github.io/rota-dados";
+  : "https://laelson587-design.github.io/faro-dados";
 
 let indice = null;           // dados/cidades.json
 let nomesCnae = {};          // dados/cnaes.json

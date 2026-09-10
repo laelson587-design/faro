@@ -3,9 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rota — quem visitar hoje</title>
+<title>Faro — quem visitar hoje</title>
 <meta name="theme-color" content="#101216">
 <link rel="stylesheet" href="estilo.css?v=4">
+
+<!-- O endereco do icone vai versionado: sem isso o Safari nunca larga o
+     antigo, licao que o Tino ja tinha aprendido. -->
+<link rel="icon" href="icone-192.png?v=4">
+<link rel="apple-touch-icon" href="icone-192.png?v=4">
+<link rel="manifest" href="manifest.json?v=4">
 </head>
 <body>
 
@@ -13,7 +19,7 @@
      ninguém sabe que lanchonete é 5611, e quem soubesse não precisaria disto. -->
 <section id="tela-escolha" class="tela ativa">
   <div class="corpo">
-    <h1>Rota</h1>
+    <h1>Faro</h1>
     <p class="chamada">Quem visitar hoje, e por quê.</p>
 
     <label class="campo">

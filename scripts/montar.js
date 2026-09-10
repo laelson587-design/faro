@@ -76,7 +76,7 @@ function pedir(caminho, opcoes = {}) {
     const req = https.request({
       host: SERVIDOR, path: caminho, method: opcoes.metodo || "GET",
       auth: SHARE + ":",
-      headers: { "User-Agent": "Rota/1.0", ...(opcoes.headers || {}) },
+      headers: { "User-Agent": "Faro/1.0", ...(opcoes.headers || {}) },
     }, (r) => {
       if (opcoes.para) {
         const saida = fs.createWriteStream(opcoes.para);

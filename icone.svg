@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Faro</title>
+
+  <!-- O desenho é uma TRILHA que termina numa porta.
+
+       "Faro" é a capacidade de achar: quem tem faro segue o rastro até o
+       lugar certo. Então o traço sai fraco e vai engrossando — como um cheiro
+       que fica mais forte perto da fonte — e para num ponto sólido, que é a
+       porta onde se bate.
+
+       Três decisões que vieram do tamanho, não do gosto:
+
+       - Traço GROSSO (44 de 512, quase 9%). A 32 pixels de favicon, linha
+         fina some e o ícone vira uma mancha.
+       - Só DUAS formas: a curva e o ponto. Ícone de app é visto do tamanho de
+         uma unha, e cada elemento a mais vira sujeira nesse tamanho.
+       - Nada de texto. "FARO" escrito seria ilegível justamente onde o ícone
+         mais aparece. -->
+
+  <defs>
+    <!-- O rastro esquenta na direção da porta: começa apagado e chega no azul
+         cheio. É o que faz a curva ter direção sem precisar de seta. -->
+    <linearGradient id="rastro" x1="0" y1="1" x2="1" y2="0">
+      <!-- A ponta não desce abaixo de 0.42. Em 0.22 ficava bonito em 512 e
+           sumia em 64, e ícone que perde metade do desenho no tamanho de uma
+           unha está desenhado para a tela errada. -->
+      <stop offset="0"    stop-color="#7aa2ff" stop-opacity="0.42"/>
+      <stop offset="0.5"  stop-color="#7aa2ff" stop-opacity="0.72"/>
+      <stop offset="1"    stop-color="#7aa2ff" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="#101216"/>
+
+  <!-- A trilha. Sobe da esquerda baixa para a direita alta, com uma
+       ondulação — reta demais viraria seta, e o que se quer dizer é rastro.
+
+       Ela PARA ANTES do ponto, de propósito. Encostando, os dois viravam uma
+       forma só e o desenho lia como balão preso a um barbante; separados, a
+       curva aponta para a porta em vez de estar amarrada nela. -->
+  <path d="M 104 396 C 168 352, 152 268, 224 236 S 302 212, 316 190"
+        fill="none" stroke="url(#rastro)" stroke-width="44"
+        stroke-linecap="round"/>
+
+  <!-- A porta: onde o rastro chega. Sólida e cheia, para ser a única coisa
+       que se enxerga quando o ícone fica minúsculo. -->
+  <circle cx="382" cy="120" r="56" fill="#7aa2ff"/>
+</svg>
