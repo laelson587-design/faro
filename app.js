@@ -30,6 +30,7 @@ let empresas = [];           // a cidade carregada
 let mostrando = POR_VEZ;
 let profissaoEscolhida = null;
 let bairroEscolhido = null;   // null = ainda não escolheu; "" = a cidade toda
+let trocandoBairro = false;   // só muda o texto: trocar não é a primeira vez
 
 /* As paradas da rota do dia, nesta sessão. Não vão para o localStorage:
    uma rota é de hoje, e amanhã se monta outra. */
@@ -313,13 +314,6 @@ async function montarRoteiro() {
   $("#rota-titulo").textContent = fatia.nome ? `${c.nome} · ${fatia.nome}` : c.nome;
   $("#rota-sub").textContent = prof.nome.toLowerCase();
 
-  // Bairros por quantidade: onde há mais porta, há mais dia de trabalho.
-  const contagem = new Map();
-  for (const e of empresas) contagem.set(e.bairro, (contagem.get(e.bairro) || 0) + 1);
-  const bairros = [...contagem].sort((a, b) => b[1] - a[1]);
-  $("#bairro").innerHTML = `<option value="">todos os bairros</option>` +
-    bairros.map(([b, n]) => `<option value="${escapar(b)}">${escapar(b || "sem bairro")} · ${n}</option>`).join("");
-
   mostrando = POR_VEZ;
   paradas = [];
   // Cidade pequena não precisa da pergunta: a lista já cabe.
@@ -332,7 +326,7 @@ async function montarRoteiro() {
 const cidadeDaTela = () => $("#rota-titulo").textContent.split("·")[0].trim();
 
 function filtradas() {
-  const bairro = $("#bairro").value || bairroEscolhido || "";
+  const bairro = bairroEscolhido || "";
   const soTel = $("#so-telefone").checked;
   const soNovas = $("#so-novas").checked;
   const esconder = $("#esconder-visitadas").checked;
@@ -354,6 +348,7 @@ function pintar() {
   if (bairroEscolhido === null) return pintarEscolhaDeBairro();
 
   $("#escolha-bairro").classList.add("oculto");
+  pintarBotaoDeBairro();
   const lista = filtradas();
   const jaFui = visitadas();
 
@@ -420,6 +415,13 @@ function pintar() {
  * Cartão e não lista suspensa: isto é a primeira decisão do dia, tomada
  * com o celular na mão e às vezes em movimento. Alvo grande erra menos.
  */
+/** O botao do filtro: diz o bairro atual e serve de porta para trocar. */
+function pintarBotaoDeBairro() {
+  $("#trocar-bairro").textContent = bairroEscolhido
+    ? `Bairro: ${bairroEscolhido} · trocar`
+    : "Todos os bairros · escolher um";
+}
+
 function pintarEscolhaDeBairro() {
   const contagem = new Map();
   const jaFui = visitadas();
@@ -437,6 +439,9 @@ function pintarEscolhaDeBairro() {
        <span class="quantas">${q.toLocaleString("pt-BR")}</span>
      </button>`).join("");
 
+  $("#dica-bairro").textContent = trocandoBairro
+    ? "Escolha outro bairro, ou veja a cidade inteira."
+    : "São muitas para uma lista só. Comece por um bairro — dá para trocar depois.";
   $("#escolha-bairro").classList.remove("oculto");
   $("#lista").innerHTML = "";
   $("#mais").classList.add("oculto");
@@ -489,7 +494,7 @@ function irPara(tela) {
 // ------------------------------------------------------------- ligações
 
 document.addEventListener("DOMContentLoaded", () => {
-  ["#bairro", "#so-telefone", "#so-novas", "#esconder-visitadas"].forEach((s) =>
+  ["#so-telefone", "#so-novas", "#esconder-visitadas"].forEach((s) =>
     $(s).addEventListener("change", () => { mostrando = POR_VEZ; pintar(); }));
 
   $("#mais").addEventListener("click", () => { mostrando += POR_VEZ; pintar(); });
@@ -498,7 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const b = ev.target.closest("[data-bairro]");
     if (!b) return;
     bairroEscolhido = b.dataset.bairro;
-    $("#bairro").value = bairroEscolhido;
+    trocandoBairro = false;
     mostrando = POR_VEZ;
     pintar();
   });
@@ -506,6 +511,13 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#ver-todos").addEventListener("click", () => {
     bairroEscolhido = "";
     mostrando = POR_VEZ;
+    pintar();
+  });
+
+  $("#trocar-bairro").addEventListener("click", () => {
+    trocandoBairro = true;
+    bairroEscolhido = null;
+    window.scrollTo(0, 0);
     pintar();
   });
 

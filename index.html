@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rota — quem visitar hoje</title>
 <meta name="theme-color" content="#101216">
-<link rel="stylesheet" href="estilo.css?v=2">
+<link rel="stylesheet" href="estilo.css?v=3">
 </head>
 <body>
 
@@ -60,10 +60,12 @@
 
   <div class="corpo">
     <div class="filtros">
-      <label class="campo">
-        <span class="rotulo">Bairro</span>
-        <select id="bairro"></select>
-      </label>
+      <!-- Botao, e nao lista suspensa: em Ribeirao Preto sao 810 bairros,
+           e a roleta do celular obriga a rolar ate achar — o mesmo defeito
+           que a cidade tinha. Aqui a saida nao e campo de digitar: e
+           reabrir os MESMOS cartoes com que o bairro foi escolhido na
+           entrada. Um jeito so de escolher bairro, usado duas vezes. -->
+      <button id="trocar-bairro" class="secundario largo"></button>
       <label class="marcavel">
         <input id="so-telefone" type="checkbox">
         <span>Só com telefone</span>
@@ -84,8 +86,7 @@
          uma parede: ninguém trabalha assim, e a primeira reação é fechar.
          Um bairro por vez cabe num dia. -->
     <div id="escolha-bairro" class="escolha-bairro oculto">
-      <p class="dica">São muitas para uma lista só. Comece por um bairro —
-         dá para trocar depois.</p>
+      <p class="dica" id="dica-bairro"></p>
       <div id="bairros-cartoes" class="bairros-cartoes"></div>
       <button id="ver-todos" class="secundario">Ver a cidade inteira mesmo assim</button>
     </div>
@@ -106,7 +107,7 @@
 
 <div id="aviso" class="aviso oculto"></div>
 
-<script src="ramos.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="ramos.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

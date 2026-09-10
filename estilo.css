@@ -217,3 +217,9 @@ button, .secundario {
 @media (min-width: 640px) {
   .bairros-cartoes { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* O botão que reabre os cartões de bairro. Largo porque é a troca mais
+   frequente do dia, e alvo pequeno em tela de rua erra. */
+.secundario.largo {
+  display: block; width: 100%; padding: 14px; text-align: left; font-size: 15px;
+}
