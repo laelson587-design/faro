@@ -110,33 +110,71 @@ async function comecar() {
   }));
 
   sel.addEventListener("change", conferirEscolha);
+  $("#zona").addEventListener("change", conferirEscolha);
   $("#buscar").addEventListener("click", montarRoteiro);
   $("#voltar").addEventListener("click", () => irPara("escolha"));
 
   // Lembra a última escolha: quem usa isto usa todo dia, na mesma cidade.
   const ultima = localStorage.getItem("rota.ultima");
   if (ultima) {
-    const [cidade, prof] = ultima.split("|");
+    const [cidade, prof, zona] = ultima.split("|");
     if ([...sel.options].some((o) => o.value === cidade)) sel.value = cidade;
     const botao = $(`.profissao[data-id="${prof}"]`);
     if (botao) botao.click();
+    // Depois do clique as zonas já foram desenhadas, então dá para escolher.
+    if (zona) { $("#zona").value = zona; conferirEscolha(); }
   }
   conferirEscolha();
 }
 
-/** Diz o peso do download ANTES de baixar. Ninguém gosta de surpresa no 4G. */
+/**
+ * Diz o peso do download ANTES de baixar. Ninguém gosta de surpresa no 4G.
+ *
+ * Nas cidades grandes o número que interessa é o da ZONA escolhida, não o
+ * da cidade inteira: quem vai bater porta na Zona Sul não baixa a Norte, e
+ * mostrar o total assustaria à toa.
+ */
 function conferirEscolha() {
   const cidade = $("#cidade").value;
-  const pronto = !!cidade && !!profissaoEscolhida;
+  const c = cidade && indice.cidades.find((x) => `${x.uf}-${x.cod}` === cidade);
+  const p = c && profissaoEscolhida && c.profissoes[profissaoEscolhida];
+
+  pintarZonas(p);
+
+  const escolha = fatiaEscolhida(p);
+  const pronto = !!escolha;
   $("#buscar").disabled = !pronto;
 
-  if (!pronto) { $("#peso").textContent = ""; return; }
-  const c = indice.cidades.find((x) => `${x.uf}-${x.cod}` === cidade);
-  const p = c && c.profissoes[profissaoEscolhida];
-  $("#peso").textContent = p
-    ? `${p.empresas.toLocaleString("pt-BR")} empresas · baixa uma vez, cerca de ${tamanho(p.bytes / 4)}`
-    : "Nenhuma empresa desse ramo nesta cidade.";
-  if (!p) $("#buscar").disabled = true;
+  if (!cidade || !profissaoEscolhida) { $("#peso").textContent = ""; return; }
+  if (!p) {
+    $("#peso").textContent = "Nenhuma empresa desse ramo nesta cidade.";
+    return;
+  }
+  if (!escolha) { $("#peso").textContent = "Escolha a região."; return; }
+
+  $("#peso").textContent =
+    `${escolha.empresas.toLocaleString("pt-BR")} empresas · baixa uma vez, cerca de ${tamanho(escolha.bytes / 4)}`;
+}
+
+/** O seletor de região só existe onde a cidade foi fatiada. */
+function pintarZonas(p) {
+  const tem = !!(p && p.zonas);
+  $("#campo-zona").classList.toggle("oculto", !tem);
+  if (!tem) { $("#zona").innerHTML = ""; return; }
+
+  const antes = $("#zona").value;
+  $("#zona").innerHTML = `<option value="">escolha a região…</option>` +
+    p.zonas.map((z) => `<option value="${escapar(z.zona)}">${escapar(z.nome)} · ${
+      z.empresas.toLocaleString("pt-BR")}</option>`).join("");
+  if (p.zonas.some((z) => z.zona === antes)) $("#zona").value = antes;
+}
+
+/** O pedaço que vai ser baixado: a cidade inteira, ou uma zona dela. */
+function fatiaEscolhida(p) {
+  if (!p) return null;
+  if (!p.zonas) return { empresas: p.empresas, bytes: p.bytes, sufixo: "" };
+  const z = p.zonas.find((x) => x.zona === $("#zona").value);
+  return z ? { empresas: z.empresas, bytes: z.bytes, sufixo: "-" + z.zona, nome: z.nome } : null;
 }
 
 // -------------------------------------------------------------- o roteiro
@@ -144,13 +182,16 @@ function conferirEscolha() {
 async function montarRoteiro() {
   const cidade = $("#cidade").value;
   const c = indice.cidades.find((x) => `${x.uf}-${x.cod}` === cidade);
-  localStorage.setItem("rota.ultima", `${cidade}|${profissaoEscolhida}`);
+  const fatia = fatiaEscolhida(c.profissoes[profissaoEscolhida]);
+  if (!fatia) return avisar("Escolha a região.");
+  localStorage.setItem("rota.ultima",
+    `${cidade}|${profissaoEscolhida}|${$("#zona").value || ""}`);
 
   $("#buscar").disabled = true;
   $("#buscar").textContent = "Baixando…";
 
   try {
-    const r = await fetch(`dados/${cidade}-${profissaoEscolhida}.txt`);
+    const r = await fetch(`dados/${cidade}-${profissaoEscolhida}${fatia.sufixo}.txt`);
     if (!r.ok) throw new Error("arquivo não encontrado");
     const texto = await r.text();
     empresas = texto.split("\n").filter(Boolean).map((l) => {
@@ -167,7 +208,7 @@ async function montarRoteiro() {
   $("#buscar").textContent = "Montar o roteiro";
 
   const prof = PROFISSOES.find((p) => p.id === profissaoEscolhida);
-  $("#rota-titulo").textContent = c.nome;
+  $("#rota-titulo").textContent = fatia.nome ? `${c.nome} · ${fatia.nome}` : c.nome;
   $("#rota-sub").textContent = prof.nome.toLowerCase();
 
   // Bairros por quantidade: onde há mais porta, há mais dia de trabalho.

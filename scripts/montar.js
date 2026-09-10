@@ -33,6 +33,35 @@ const SHARE = "YggdBLfdninEJX9";
 /* 02 = ativa. Empresa baixada não recebe visita. */
 const ATIVA = "02";
 
+/* Acima disto, o arquivo é fatiado por zona. São Paulo inteira dava 791 mil
+   empresas de maquininha em 26 MB comprimidos — pesado de baixar e, pior,
+   impossível de usar. Ninguém visita 791 mil portas; quem trabalha numa
+   cidade grande trabalha uma zona.
+
+   O limite é sobre O ARQUIVO QUE SE BAIXA, não sobre o tamanho da cidade.
+   Medir pelo total do município fatiava Osasco — que tem 60 mil somando todos
+   os ramos, mas cujo arquivo de maquininha são 3 MB e cabe inteiro. Fatiar sem
+   precisar só acrescenta uma pergunta na tela e nenhum ganho. */
+const FATIAR_ACIMA_DE_BYTES = 8 * 1024 * 1024;
+
+/* As zonas saem do CEP, que é como o Brasil já divide o território — e, nas
+   capitais, batem com o nome que as pessoas usam. Os dois primeiros dígitos
+   bastam; três dariam cinquenta fatias e nenhuma legível.
+
+   Cidade que não estiver aqui é fatiada assim mesmo, com o rótulo do próprio
+   CEP: melhor "zona 13" do que um arquivo grande demais para abrir. */
+const ZONAS = {
+  // São Paulo capital
+  "01": "Centro", "02": "Zona Norte", "03": "Zona Leste",
+  "04": "Zona Sul", "05": "Zona Oeste", "08": "Extremo Leste",
+};
+
+function zonaDe(cep) {
+  const c = String(cep || "").replace(/\D/g, "").padStart(8, "0");
+  const dois = c.slice(0, 2);
+  return { chave: dois, nome: ZONAS[dois] || `CEP ${dois}xxx` };
+}
+
 /* Colunas do arquivo Estabelecimentos, conferidas na própria base. */
 const COL = {
   CNPJ: 0, ORDEM: 1, DV: 2, FANTASIA: 4, SITUACAO: 5, INICIO: 10, CNAE: 11,
@@ -198,6 +227,36 @@ function linhaDeSaida(c) {
     cnaes.set(cod, nome);
   });
 
+  /* -- refazer a saída sem baixar nada.
+   *
+   * Mudar como as profissões agrupam, ou como as cidades grandes são fatiadas,
+   * não deveria custar sete GB de download de novo: o que já está em `dados/`
+   * é a base bruta já filtrada, e basta reagrupá-la.
+   *
+   * Um mesmo estabelecimento aparece em mais de uma profissão (padaria serve
+   * a maquininha e a energia), então a união passa por um Set — sem isso ele
+   * entraria duas vezes ao voltar. */
+  if (args.includes("--refatiar")) {
+    console.log("\nRefazendo a partir de dados/, sem baixar nada");
+    const porCidade = new Map();
+    let n = 0;
+    for (const arq of fs.readdirSync(SAIDA).filter((f) => f.endsWith(".txt"))) {
+      const chave = arq.split("-").slice(0, 2).join("-");
+      if (!porCidade.has(chave)) porCidade.set(chave, new Set());
+      const alvo = porCidade.get(chave);
+      for (const l of fs.readFileSync(path.join(SAIDA, arq), "latin1").split("\n")) {
+        if (l) alvo.add(l);
+      }
+      n++;
+    }
+    for (const [k, v] of porCidade) porCidade.set(k, [...v]);
+    const total = [...porCidade.values()].reduce((s, v) => s + v.length, 0);
+    console.log(`  ${n} arquivos lidos · ${porCidade.size} cidades · ${total.toLocaleString("pt-BR")} empresas`);
+
+    for (const f of fs.readdirSync(SAIDA)) fs.unlinkSync(path.join(SAIDA, f));
+    return escrever(porCidade, municipios, cnaes, mes, Date.now(), total, 0);
+  }
+
   /* -- os dez lotes, um por vez, e RETOMÁVEL.
    *
    * Uma noite de download não sobrevive a um notebook que dorme. Em vez de
@@ -281,6 +340,23 @@ function linhaDeSaida(c) {
    * As profissões se sobrepõem (padaria serve a maquininha e a energia), então
    * o total em disco cresce um pouco. Vale: o que importa é o tamanho de UM
    * download, não a soma de todos. */
+  // Deu certo até aqui: o progresso parcial já não serve para nada, e ficaria
+  // fazendo a próxima rodada pular lotes que precisam ser refeitos.
+  for (const j of lotes) {
+    if (fs.existsSync(parcialDe(j))) fs.unlinkSync(parcialDe(j));
+  }
+  return escrever(porCidade, municipios, cnaes, mes, inicio, guardadas, lidas);
+})().catch((e) => { console.error("\nquebrou:", e.message); process.exit(1); });
+
+/**
+ * Escreve os arquivos de cidade e o indice.
+ *
+ * Vive numa funcao propria porque DOIS caminhos chegam aqui: a montagem
+ * normal, que acabou de ler os lotes, e o --refatiar, que reagrupa o que ja
+ * estava em dados/. Se fossem dois codigos, um dia sairiam arquivos
+ * diferentes do mesmo dado — e ninguem descobriria por qual dos dois.
+ */
+function escrever(porCidade, municipios, cnaes, mes, inicio, guardadas, lidas) {
   console.log("\nEscrevendo");
   const indice = [];
   for (const [chave, linhas] of [...porCidade].sort()) {
@@ -296,12 +372,37 @@ function linhaDeSaida(c) {
       });
       if (!minhas.length) continue;
 
-      const arquivo = `${chave}-${prof.id}.txt`;
-      const conteudo = minhas.join("\n");
-      fs.writeFileSync(path.join(SAIDA, arquivo), conteudo, "latin1");
+      // Decidido AQUI, por profissao: e o arquivo dela que a pessoa baixa.
+      const fatiar = minhas.reduce((s, l) => s + l.length + 1, 0) > FATIAR_ACIMA_DE_BYTES;
+
+      /* Cidade grande vira uma fatia por zona; cidade normal continua um
+         arquivo só. A zona entra no nome do arquivo, então o app baixa
+         exatamente a que a pessoa escolheu e mais nada. */
+      const grupos = new Map();
+      for (const l of minhas) {
+        const z = fatiar ? zonaDe(l.split("\t")[5]) : { chave: "", nome: "" };
+        if (!grupos.has(z.chave)) grupos.set(z.chave, { nome: z.nome, linhas: [] });
+        grupos.get(z.chave).linhas.push(l);
+      }
+
+      const zonas = [];
+      for (const [zc, g] of [...grupos].sort()) {
+        const arquivo = `${chave}-${prof.id}${zc ? "-" + zc : ""}.txt`;
+        const conteudo = g.linhas.join("\n");
+        fs.writeFileSync(path.join(SAIDA, arquivo), conteudo, "latin1");
+        zonas.push({
+          zona: zc, nome: g.nome,
+          empresas: g.linhas.length,
+          bytes: Buffer.byteLength(conteudo, "latin1"),
+        });
+      }
+
       porProfissao[prof.id] = {
         empresas: minhas.length,
-        bytes: Buffer.byteLength(conteudo, "latin1"),
+        bytes: zonas.reduce((s, z) => s + z.bytes, 0),
+        // Só as cidades fatiadas trazem `zonas`; nas outras o app baixa o
+        // arquivo único e não pergunta nada a mais.
+        ...(fatiar ? { zonas } : {}),
       };
     }
 
@@ -329,11 +430,6 @@ function linhaDeSaida(c) {
   }
   fs.writeFileSync(path.join(SAIDA, "cnaes.json"), JSON.stringify(usados));
 
-  // Deu certo até aqui: o progresso parcial já não serve para nada, e ficaria
-  // fazendo a próxima rodada pular lotes que precisam ser refeitos.
-  for (const j of lotes) {
-    if (fs.existsSync(parcialDe(j))) fs.unlinkSync(parcialDe(j));
-  }
 
   const seg = ((Date.now() - inicio) / 1000).toFixed(0);
   const totalBytes = indice.reduce((s, c) => s + c.bytes, 0);
@@ -344,4 +440,4 @@ function linhaDeSaida(c) {
   for (const c of indice.slice(0, 5)) {
     console.log(`    ${c.nome.padEnd(22)} ${String(c.empresas).padStart(7)} empresas · ${(c.bytes / 1024).toFixed(0)} KB`);
   }
-})().catch((e) => { console.error("\nquebrou:", e.message); process.exit(1); });
+}

@@ -24,6 +24,13 @@
     <h3>O que você vende</h3>
     <div id="profissoes" class="profissoes"></div>
 
+    <!-- Só aparece nas cidades grandes. Numa cidade normal perguntar a zona
+         seria uma pergunta a mais sem resposta útil. -->
+    <label class="campo oculto" id="campo-zona">
+      <span class="rotulo">Qual região</span>
+      <select id="zona"></select>
+    </label>
+
     <button id="buscar" class="principal" disabled>Montar o roteiro</button>
     <p class="dica" id="peso"></p>
 

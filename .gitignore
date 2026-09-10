@@ -1,2 +1,8 @@
 # Os zips da Receita: 7 GB baixados, filtrados e apagados. Nunca sobem.
 .cache/
+
+# Os dados montados: 555 MB só de São Paulo, e refeitos a cada trimestre.
+# No git eles nunca sairiam do histórico — duas atualizações e o repositório
+# passa de um giga, mesmo o site publicado tendo 500 MB. Ficam de fora daqui e
+# são publicados à parte.
+dados/
