@@ -161,3 +161,59 @@ button, .secundario {
 /* Empresa sem nome fantasia: o endereço vira o título, porque é o que se lê
    na fachada. Em peso menor, para não competir com quem tem nome. */
 .empresa .nome.anonima { font-weight: 600; color: var(--fraco); font-size: 16px; }
+
+/* ------------------------------------------------------- busca de cidade
+
+   São 645 cidades. Lista suspensa vira roleta no celular e obriga a rolar
+   até achar; digitar três letras resolve. */
+
+.sugestoes {
+  margin-top: 6px; max-height: 320px; overflow-y: auto;
+  background: var(--carta); border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.sugestao {
+  display: flex; width: 100%; align-items: baseline; justify-content: space-between;
+  gap: 10px; padding: 14px; text-align: left;
+  background: transparent; border: none; border-bottom: 1px solid var(--borda);
+  border-radius: 0; color: var(--texto);
+}
+.sugestao:last-child { border-bottom: none; }
+.sugestao .nome { font-size: 16px; font-weight: 600; }
+.sugestao .quantas { font-size: 13px; color: var(--tenue); flex: none; }
+.sugestoes .nenhuma { margin: 0; padding: 16px; color: var(--tenue); font-size: 14px; }
+
+/* ----------------------------------------------------- escolha do bairro
+
+   Cartão grande, e não lista: esta é a primeira decisão do dia, tomada com
+   o celular na mão e às vezes andando. Alvo grande erra menos. */
+
+.escolha-bairro { margin-top: 12px; }
+.bairros-cartoes {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;
+}
+.cartao-bairro {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+  padding: 15px 14px; text-align: left;
+  background: var(--carta); border: 1px solid var(--borda);
+}
+.cartao-bairro .nome { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.cartao-bairro .quantas { font-size: 13px; color: var(--marca); font-weight: 600; }
+
+/* ---------------------------------------------------------- a rota do dia */
+
+.barra-rota {
+  position: sticky; bottom: 0; z-index: 30;
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--carta); border-top: 1px solid var(--borda);
+}
+.barra-rota > span { flex: none; font-size: 14px; font-weight: 700; color: var(--marca); }
+.barra-rota .principal { margin: 0; flex: 1; padding: 13px; font-size: 15px; }
+.barra-rota .secundario { flex: none; }
+
+.acoes .na-rota { border-color: var(--marca); color: var(--marca); background: var(--marca-fraca); }
+
+@media (min-width: 640px) {
+  .bairros-cartoes { grid-template-columns: repeat(3, 1fr); }
+}

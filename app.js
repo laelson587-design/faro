@@ -29,6 +29,19 @@ let nomesCnae = {};          // dados/cnaes.json
 let empresas = [];           // a cidade carregada
 let mostrando = POR_VEZ;
 let profissaoEscolhida = null;
+let bairroEscolhido = null;   // null = ainda não escolheu; "" = a cidade toda
+
+/* As paradas da rota do dia, nesta sessão. Não vão para o localStorage:
+   uma rota é de hoje, e amanhã se monta outra. */
+let paradas = [];
+
+/* O Google Maps aceita poucas paradas por endereço de URL. Passar disso
+   faz o link ser recusado calado, que é o pior jeito de falhar. */
+const MAX_PARADAS = 9;
+
+/* Acima disto, pergunta o bairro antes de listar. Trinta e cinco mil
+   empresas numa tela é o mesmo que nenhuma. */
+const PERGUNTAR_BAIRRO_ACIMA_DE = 400;
 
 // --------------------------------------------------------------- guardado
 
@@ -82,6 +95,18 @@ function abertura(d) {
   return { texto: `${MESES[mes - 1] || ""}/${ano}`, anos };
 }
 
+/**
+ * O endereço como o mapa entende. Cidade e UF entram porque "RUA DAS
+ * FLORES 100" existe em quinhentas cidades, e sem elas o Maps abre na
+ * errada — parecendo erro do app, não do endereço.
+ */
+function paraMapa(e, cidade) {
+  return [e.rua, e.bairro, cidade, e.cep].filter(Boolean).join(", ");
+}
+
+const linkDoMapa = (endereco) =>
+  "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(endereco);
+
 const tamanho = (n) => n < 1024 ? n + " B"
   : n < 1048576 ? (n / 1024).toFixed(0) + " KB"
   : (n / 1048576).toFixed(1) + " MB";
@@ -101,12 +126,7 @@ async function comecar() {
   const [ano, mes] = (indice.base || "").split("-");
   if (ano) $("#base-mes").textContent = `Base de ${mes}/${ano}.`;
 
-  const sel = $("#cidade");
-  sel.innerHTML = `<option value="">escolha…</option>` + indice.cidades
-    .slice()
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-    .map((c) => `<option value="${c.uf}-${c.cod}">${escapar(c.nome)} · ${c.uf}</option>`)
-    .join("");
+  ligarBuscaDeCidade();
 
   $("#profissoes").innerHTML = PROFISSOES
     .filter((p) => p.id !== "todos")
@@ -121,7 +141,6 @@ async function comecar() {
     conferirEscolha();
   }));
 
-  sel.addEventListener("change", conferirEscolha);
   $("#zona").addEventListener("change", conferirEscolha);
   $("#buscar").addEventListener("click", montarRoteiro);
   $("#voltar").addEventListener("click", () => irPara("escolha"));
@@ -130,13 +149,84 @@ async function comecar() {
   const ultima = localStorage.getItem("rota.ultima");
   if (ultima) {
     const [cidade, prof, zona] = ultima.split("|");
-    if ([...sel.options].some((o) => o.value === cidade)) sel.value = cidade;
+    const c = indice.cidades.find((x) => `${x.uf}-${x.cod}` === cidade);
+    if (c) escolherCidade(c);
     const botao = $(`.profissao[data-id="${prof}"]`);
     if (botao) botao.click();
     // Depois do clique as zonas já foram desenhadas, então dá para escolher.
     if (zona) { $("#zona").value = zona; conferirEscolha(); }
   }
   conferirEscolha();
+}
+
+/* ------------------------------------------------- a busca de cidade */
+
+/** A cidade escolhida, no formato "UF-CODIGO". Vazio enquanto não houver. */
+const cidadeEscolhida = () => $("#cidade-busca").dataset.cod || "";
+
+/**
+ * Tira acento e caixa, para "sao jose" achar "SÃO JOSÉ".
+ *
+ * Quem digita no celular, andando, não põe acento — e uma busca que exige
+ * acento não acha nada e parece quebrada.
+ */
+const semAcento = (s) => String(s || "").normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+function escolherCidade(c) {
+  $("#cidade-busca").value = `${c.nome} · ${c.uf}`;
+  $("#cidade-busca").dataset.cod = `${c.uf}-${c.cod}`;
+  $("#cidade-lista").classList.add("oculto");
+  conferirEscolha();
+}
+
+function ligarBuscaDeCidade() {
+  const campo = $("#cidade-busca");
+  const lista = $("#cidade-lista");
+
+  const desenhar = () => {
+    const busca = semAcento(campo.value.split("·")[0].trim());
+    // Sem nada digitado mostra as maiores, que é o palpite mais provável.
+    const achadas = busca
+      ? indice.cidades.filter((c) => semAcento(c.nome).includes(busca))
+      : indice.cidades.slice(0, 12);
+
+    if (!achadas.length) {
+      lista.innerHTML = `<p class="nenhuma">Nenhuma cidade com esse nome.</p>`;
+      lista.classList.remove("oculto");
+      return;
+    }
+
+    // Doze bastam: quem digitou três letras não precisa ver duzentas.
+    lista.innerHTML = achadas.slice(0, 12).map((c) =>
+      `<button class="sugestao" data-cod="${c.uf}-${c.cod}">
+         <span class="nome">${escapar(c.nome)}</span>
+         <span class="quantas">${c.empresas.toLocaleString("pt-BR")} empresas</span>
+       </button>`).join("");
+    lista.classList.remove("oculto");
+  };
+
+  campo.addEventListener("input", () => {
+    // Digitou de novo? A escolha anterior deixou de valer.
+    campo.dataset.cod = "";
+    conferirEscolha();
+    desenhar();
+  });
+  campo.addEventListener("focus", desenhar);
+
+  lista.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-cod]");
+    if (!b) return;
+    const c = indice.cidades.find((x) => `${x.uf}-${x.cod}` === b.dataset.cod);
+    if (c) escolherCidade(c);
+  });
+
+  // Tocar fora fecha, senão a lista fica por cima do resto da tela.
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest("#cidade-busca, #cidade-lista")) {
+      lista.classList.add("oculto");
+    }
+  });
 }
 
 /**
@@ -147,7 +237,7 @@ async function comecar() {
  * mostrar o total assustaria à toa.
  */
 function conferirEscolha() {
-  const cidade = $("#cidade").value;
+  const cidade = cidadeEscolhida();
   const c = cidade && indice.cidades.find((x) => `${x.uf}-${x.cod}` === cidade);
   const p = c && profissaoEscolhida && c.profissoes[profissaoEscolhida];
 
@@ -192,7 +282,7 @@ function fatiaEscolhida(p) {
 // -------------------------------------------------------------- o roteiro
 
 async function montarRoteiro() {
-  const cidade = $("#cidade").value;
+  const cidade = cidadeEscolhida();
   const c = indice.cidades.find((x) => `${x.uf}-${x.cod}` === cidade);
   const fatia = fatiaEscolhida(c.profissoes[profissaoEscolhida]);
   if (!fatia) return avisar("Escolha a região.");
@@ -231,12 +321,18 @@ async function montarRoteiro() {
     bairros.map(([b, n]) => `<option value="${escapar(b)}">${escapar(b || "sem bairro")} · ${n}</option>`).join("");
 
   mostrando = POR_VEZ;
+  paradas = [];
+  // Cidade pequena não precisa da pergunta: a lista já cabe.
+  bairroEscolhido = empresas.length > PERGUNTAR_BAIRRO_ACIMA_DE ? null : "";
   irPara("rota");
   pintar();
 }
 
+/** O nome da cidade sem a zona, que o Maps não entende. */
+const cidadeDaTela = () => $("#rota-titulo").textContent.split("·")[0].trim();
+
 function filtradas() {
-  const bairro = $("#bairro").value;
+  const bairro = $("#bairro").value || bairroEscolhido || "";
   const soTel = $("#so-telefone").checked;
   const soNovas = $("#so-novas").checked;
   const esconder = $("#esconder-visitadas").checked;
@@ -253,6 +349,11 @@ function filtradas() {
 }
 
 function pintar() {
+  // Ainda não escolheu o bairro numa cidade grande: mostra a escolha e
+  // nada mais. Duas coisas na tela ao mesmo tempo confundem qual usar.
+  if (bairroEscolhido === null) return pintarEscolhaDeBairro();
+
+  $("#escolha-bairro").classList.add("oculto");
   const lista = filtradas();
   const jaFui = visitadas();
 
@@ -277,6 +378,7 @@ function pintar() {
       const ramo = ramoDe(e.cnae);
       const ab = abertura(e.abriu);
       const fui = jaFui.has(e.cnpj);
+    const naRota = paradas.some((x) => x.cnpj === e.cnpj);
       blocos.push(`
         <div class="empresa ${fui ? "visitada" : ""}">
           <!-- Sem nome fantasia, quem identifica é o endereço: é o que se vê
@@ -294,6 +396,10 @@ function pintar() {
           <div class="acoes">
             ${e.tel ? `<a class="secundario" href="tel:+55${escapar(e.tel)}">${escapar(telBonito(e.tel))}</a>`
                     : `<span class="secundario apagado">sem telefone</span>`}
+            <a class="secundario" target="_blank" rel="noopener"
+               href="${escapar(linkDoMapa(paraMapa(e, cidadeDaTela())))}">No mapa</a>
+            <button class="secundario ${naRota ? "na-rota" : ""}" data-parada="${escapar(e.cnpj)}">${
+              naRota ? "Na rota ✓" : "+ rota"}</button>
             <button class="secundario" data-cnpj="${escapar(e.cnpj)}">${escapar(cnpjBonito(e.cnpj))}</button>
             <button class="secundario visitar" data-visitar="${escapar(e.cnpj)}">${fui ? "Desmarcar" : "Visitei"}</button>
           </div>
@@ -303,8 +409,76 @@ function pintar() {
 
   $("#lista").innerHTML = blocos.join("") ||
     `<p class="vazio">Nada aqui. Afrouxe um filtro.</p>`;
+  pintarBarraDaRota();
   $("#mais").classList.toggle("oculto", lista.length <= mostrando);
   $("#mais").textContent = `Mostrar mais ${Math.min(POR_VEZ, lista.length - mostrando)}`;
+}
+
+/**
+ * A escolha do bairro, em cartões grandes e ordenados por quantidade.
+ *
+ * Cartão e não lista suspensa: isto é a primeira decisão do dia, tomada
+ * com o celular na mão e às vezes em movimento. Alvo grande erra menos.
+ */
+function pintarEscolhaDeBairro() {
+  const contagem = new Map();
+  const jaFui = visitadas();
+  for (const e of empresas) {
+    if (jaFui.has(e.cnpj)) continue;
+    contagem.set(e.bairro, (contagem.get(e.bairro) || 0) + 1);
+  }
+
+  const bairros = [...contagem].sort((a, b) => b[1] - a[1]);
+  $("#contagem").textContent =
+    `${empresas.length.toLocaleString("pt-BR")} em ${bairros.length} bairros`;
+  $("#bairros-cartoes").innerHTML = bairros.map(([b, q]) =>
+    `<button class="cartao-bairro" data-bairro="${escapar(b)}">
+       <span class="nome">${escapar(b || "sem bairro")}</span>
+       <span class="quantas">${q.toLocaleString("pt-BR")}</span>
+     </button>`).join("");
+
+  $("#escolha-bairro").classList.remove("oculto");
+  $("#lista").innerHTML = "";
+  $("#mais").classList.add("oculto");
+  $("#barra-rota").classList.add("oculto");
+}
+
+/* ----------------------------------------------------- a rota do dia */
+
+/**
+ * Abre o Google Maps com as paradas marcadas, na ordem em que foram
+ * escolhidas. A última vira o destino e o resto vira parada no caminho —
+ * é assim que o endereço do Maps espera receber.
+ *
+ * Não precisamos das coordenadas: quem converte endereço em ponto é o
+ * Google, no aparelho de quem tocou, de graça. Um mapa desenhado por nós
+ * exigiria geocodificar 35 mil endereços por cidade, que é serviço pago.
+ */
+function abrirRota() {
+  if (!paradas.length) return;
+  const cidade = $("#rota-titulo").textContent.split("·")[0].trim();
+  const enderecos = paradas.map((e) => paraMapa(e, cidade));
+
+  if (enderecos.length === 1) {
+    window.open(linkDoMapa(enderecos[0]), "_blank");
+    return;
+  }
+
+  const destino = enderecos[enderecos.length - 1];
+  const meio = enderecos.slice(0, -1);
+  window.open("https://www.google.com/maps/dir/?api=1"
+    + "&destination=" + encodeURIComponent(destino)
+    + "&waypoints=" + meio.map(encodeURIComponent).join("|")
+    + "&travelmode=driving", "_blank");
+}
+
+function pintarBarraDaRota() {
+  const barra = $("#barra-rota");
+  barra.classList.toggle("oculto", !paradas.length);
+  if (!paradas.length) return;
+  $("#rota-quantas").textContent = paradas.length === 1
+    ? "1 parada"
+    : `${paradas.length} paradas`;
 }
 
 function irPara(tela) {
@@ -320,7 +494,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("#mais").addEventListener("click", () => { mostrando += POR_VEZ; pintar(); });
 
+  $("#bairros-cartoes").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-bairro]");
+    if (!b) return;
+    bairroEscolhido = b.dataset.bairro;
+    $("#bairro").value = bairroEscolhido;
+    mostrando = POR_VEZ;
+    pintar();
+  });
+
+  $("#ver-todos").addEventListener("click", () => {
+    bairroEscolhido = "";
+    mostrando = POR_VEZ;
+    pintar();
+  });
+
+  $("#abrir-rota").addEventListener("click", abrirRota);
+  $("#limpar-rota").addEventListener("click", () => { paradas = []; pintar(); });
+
   $("#lista").addEventListener("click", (ev) => {
+    const parada = ev.target.closest("[data-parada]");
+    if (parada) {
+      const cnpj = parada.dataset.parada;
+      const i = paradas.findIndex((x) => x.cnpj === cnpj);
+      if (i >= 0) paradas.splice(i, 1);
+      else if (paradas.length >= MAX_PARADAS) {
+        // O Maps recusa endereços longos demais, e recusa em silêncio.
+        avisar(`O mapa aceita ${MAX_PARADAS} paradas por vez.`);
+        return;
+      } else {
+        paradas.push(empresas.find((x) => x.cnpj === cnpj));
+      }
+      pintar();
+      return;
+    }
+
     const visitar = ev.target.closest("[data-visitar]");
     if (visitar) {
       const cnpj = visitar.dataset.visitar;

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rota — quem visitar hoje</title>
 <meta name="theme-color" content="#101216">
-<link rel="stylesheet" href="estilo.css?v=1">
+<link rel="stylesheet" href="estilo.css?v=2">
 </head>
 <body>
 
@@ -18,7 +18,12 @@
 
     <label class="campo">
       <span class="rotulo">Sua cidade</span>
-      <select id="cidade"><option value="">carregando…</option></select>
+      <!-- Campo de digitar, e não uma lista: são 645 cidades, e a roleta do
+           celular obriga a rolar até achar. Digitar "ribe" resolve. O valor
+           escolhido fica no `data-cod`; o texto é só o que a pessoa lê. -->
+      <input id="cidade-busca" type="text" autocomplete="off" enterkeyhint="search"
+             placeholder="digite a cidade…" data-cod="">
+      <div id="cidade-lista" class="sugestoes oculto"></div>
     </label>
 
     <h3>O que você vende</h3>
@@ -74,14 +79,34 @@
     </div>
 
     <p id="contagem" class="contagem"></p>
+
+    <!-- Antes da lista, a escolha do bairro. Abrir com 35 mil empresas é
+         uma parede: ninguém trabalha assim, e a primeira reação é fechar.
+         Um bairro por vez cabe num dia. -->
+    <div id="escolha-bairro" class="escolha-bairro oculto">
+      <p class="dica">São muitas para uma lista só. Comece por um bairro —
+         dá para trocar depois.</p>
+      <div id="bairros-cartoes" class="bairros-cartoes"></div>
+      <button id="ver-todos" class="secundario">Ver a cidade inteira mesmo assim</button>
+    </div>
+
     <div id="lista"></div>
+
+    <!-- A rota do dia. Aparece quando há empresa marcada, e some quando
+         não há: botão sem função na tela é ruído. -->
+    <div id="barra-rota" class="barra-rota oculto">
+      <span id="rota-quantas"></span>
+      <button id="abrir-rota" class="principal">Traçar rota</button>
+      <button id="limpar-rota" class="secundario">Limpar</button>
+    </div>
+
     <button id="mais" class="secundario oculto">Mostrar mais</button>
   </div>
 </section>
 
 <div id="aviso" class="aviso oculto"></div>
 
-<script src="ramos.js?v=1"></script>
-<script src="app.js?v=1"></script>
+<script src="ramos.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
