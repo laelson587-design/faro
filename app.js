@@ -29,8 +29,17 @@ let nomesCnae = {};          // dados/cnaes.json
 let empresas = [];           // a cidade carregada
 let mostrando = POR_VEZ;
 let profissaoEscolhida = null;
-let bairroEscolhido = null;   // null = ainda não escolheu; "" = a cidade toda
+/* null = ainda não escolheu (mostra a tela de escolha)
+   []   = a cidade inteira
+   [..] = estes bairros */
+let bairrosEscolhidos = null;
+
+/* O que está marcado NA TELA DE ESCOLHA, antes de confirmar. Separado do
+   de cima porque marcar e ver são coisas diferentes: dá para marcar três,
+   mudar de ideia e sair sem trocar nada. */
+let marcados = [];
 let trocandoBairro = false;   // só muda o texto: trocar não é a primeira vez
+let bairrosContados = [];     // [nome, quantas], já ordenado
 
 /* As paradas da rota do dia, nesta sessão. Não vão para o localStorage:
    uma rota é de hoje, e amanhã se monta outra. */
@@ -317,7 +326,7 @@ async function montarRoteiro() {
   mostrando = POR_VEZ;
   paradas = [];
   // Cidade pequena não precisa da pergunta: a lista já cabe.
-  bairroEscolhido = empresas.length > PERGUNTAR_BAIRRO_ACIMA_DE ? null : "";
+  bairrosEscolhidos = empresas.length > PERGUNTAR_BAIRRO_ACIMA_DE ? null : [];
   irPara("rota");
   pintar();
 }
@@ -326,7 +335,7 @@ async function montarRoteiro() {
 const cidadeDaTela = () => $("#rota-titulo").textContent.split("·")[0].trim();
 
 function filtradas() {
-  const bairro = bairroEscolhido || "";
+  const bairros = bairrosEscolhidos || [];
   const soTel = $("#so-telefone").checked;
   const soNovas = $("#so-novas").checked;
   const esconder = $("#esconder-visitadas").checked;
@@ -334,7 +343,7 @@ function filtradas() {
   const corte = String(new Date().getFullYear() - 2) + "0000";
 
   return empresas.filter((e) => {
-    if (bairro && e.bairro !== bairro) return false;
+    if (bairros.length && !bairros.includes(e.bairro)) return false;
     if (soTel && !e.tel) return false;
     if (soNovas && !(e.abriu >= corte)) return false;
     if (esconder && jaFui.has(e.cnpj)) return false;
@@ -345,9 +354,10 @@ function filtradas() {
 function pintar() {
   // Ainda não escolheu o bairro numa cidade grande: mostra a escolha e
   // nada mais. Duas coisas na tela ao mesmo tempo confundem qual usar.
-  if (bairroEscolhido === null) return pintarEscolhaDeBairro();
+  if (bairrosEscolhidos === null) return pintarEscolhaDeBairro();
 
   $("#escolha-bairro").classList.add("oculto");
+  $("#barra-bairros").classList.add("oculto");
   pintarBotaoDeBairro();
   const lista = filtradas();
   const jaFui = visitadas();
@@ -415,11 +425,47 @@ function pintar() {
  * Cartão e não lista suspensa: isto é a primeira decisão do dia, tomada
  * com o celular na mão e às vezes em movimento. Alvo grande erra menos.
  */
+/**
+ * Os cartões, filtrados pelo que estiver digitado.
+ *
+ * Sem nada digitado mostra todos, do maior para o menor — quem não sabe
+ * onde vai começa pelo bairro com mais porta. Digitando, some o resto.
+ */
+function pintarCartoesDeBairro() {
+  const busca = semAcento($("#bairro-busca").value.trim());
+  const achados = busca
+    ? bairrosContados.filter(([b]) => semAcento(b).includes(busca))
+    : bairrosContados;
+
+  $("#bairro-nenhum").classList.toggle("oculto", achados.length > 0);
+  $("#bairros-cartoes").innerHTML = achados.map(([b, q]) =>
+    `<button class="cartao-bairro ${marcados.includes(b) ? "marcado" : ""}"
+             data-bairro="${escapar(b)}">
+       <span class="nome">${escapar(b || "sem bairro")}</span>
+       <span class="quantas">${q.toLocaleString("pt-BR")}</span>
+     </button>`).join("");
+  pintarBarraDeBairros();
+}
+
+/** Quantos estão marcados, e quantas empresas isso dá. */
+function pintarBarraDeBairros() {
+  $("#barra-bairros").classList.toggle("oculto", !marcados.length);
+  if (!marcados.length) return;
+  const quantas = bairrosContados
+    .filter(([b]) => marcados.includes(b))
+    .reduce((s, [, q]) => s + q, 0);
+  $("#bairros-quantos").textContent = marcados.length === 1
+    ? `1 bairro · ${quantas.toLocaleString("pt-BR")}`
+    : `${marcados.length} bairros · ${quantas.toLocaleString("pt-BR")}`;
+}
+
 /** O botao do filtro: diz o bairro atual e serve de porta para trocar. */
 function pintarBotaoDeBairro() {
-  $("#trocar-bairro").textContent = bairroEscolhido
-    ? `Bairro: ${bairroEscolhido} · trocar`
-    : "Todos os bairros · escolher um";
+  const b = bairrosEscolhidos || [];
+  $("#trocar-bairro").textContent =
+    b.length === 0 ? "Todos os bairros · escolher"
+    : b.length === 1 ? `Bairro: ${b[0]} · trocar`
+    : `${b.length} bairros · trocar`;
 }
 
 function pintarEscolhaDeBairro() {
@@ -430,14 +476,12 @@ function pintarEscolhaDeBairro() {
     contagem.set(e.bairro, (contagem.get(e.bairro) || 0) + 1);
   }
 
-  const bairros = [...contagem].sort((a, b) => b[1] - a[1]);
+  // Guardado para o filtro redesenhar a cada tecla sem recontar 35 mil.
+  bairrosContados = [...contagem].sort((a, b) => b[1] - a[1]);
   $("#contagem").textContent =
-    `${empresas.length.toLocaleString("pt-BR")} em ${bairros.length} bairros`;
-  $("#bairros-cartoes").innerHTML = bairros.map(([b, q]) =>
-    `<button class="cartao-bairro" data-bairro="${escapar(b)}">
-       <span class="nome">${escapar(b || "sem bairro")}</span>
-       <span class="quantas">${q.toLocaleString("pt-BR")}</span>
-     </button>`).join("");
+    `${empresas.length.toLocaleString("pt-BR")} em ${bairrosContados.length} bairros`;
+  $("#bairro-busca").value = "";
+  pintarCartoesDeBairro();
 
   $("#dica-bairro").textContent = trocandoBairro
     ? "Escolha outro bairro, ou veja a cidade inteira."
@@ -502,21 +546,41 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#bairros-cartoes").addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-bairro]");
     if (!b) return;
-    bairroEscolhido = b.dataset.bairro;
+    const nome = b.dataset.bairro;
+    const i = marcados.indexOf(nome);
+    if (i >= 0) marcados.splice(i, 1); else marcados.push(nome);
+    pintarCartoesDeBairro();
+  });
+
+  $("#ver-bairros").addEventListener("click", () => {
+    if (!marcados.length) return;
+    bairrosEscolhidos = [...marcados];
     trocandoBairro = false;
     mostrando = POR_VEZ;
+    window.scrollTo(0, 0);
     pintar();
+  });
+
+  $("#limpar-bairros").addEventListener("click", () => {
+    marcados = [];
+    pintarCartoesDeBairro();
   });
 
   $("#ver-todos").addEventListener("click", () => {
-    bairroEscolhido = "";
+    bairrosEscolhidos = [];
+    marcados = [];
     mostrando = POR_VEZ;
     pintar();
   });
 
+  $("#bairro-busca").addEventListener("input", pintarCartoesDeBairro);
+
   $("#trocar-bairro").addEventListener("click", () => {
     trocandoBairro = true;
-    bairroEscolhido = null;
+    // Guarda ANTES de apagar: a tela de escolha lê daqui para voltar com o
+    // que já estava valendo marcado, e sem isto ela abria em branco.
+    marcados = [...(bairrosEscolhidos || [])];
+    bairrosEscolhidos = null;
     window.scrollTo(0, 0);
     pintar();
   });

@@ -223,3 +223,15 @@ button, .secundario {
 .secundario.largo {
   display: block; width: 100%; padding: 14px; text-align: left; font-size: 15px;
 }
+
+/* O campo de achar bairro, acima dos cartões. Cartão resolve a roleta;
+   digitar resolve o volume. Ribeirão Preto tem 810 bairros. */
+#bairro-busca { margin-bottom: 12px; }
+
+/* Bairro marcado na escolha. Precisa saltar aos olhos porque agora dá para
+   marcar vários, e sem sinal claro a pessoa não sabe o que já tocou. */
+.cartao-bairro.marcado {
+  border-color: var(--marca); background: var(--marca-fraca);
+}
+.cartao-bairro.marcado .nome { color: var(--marca); }
+.cartao-bairro.marcado .nome::before { content: "✓ "; }
