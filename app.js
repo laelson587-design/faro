@@ -12,6 +12,18 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const CHAVE_VISITADAS = "rota.visitadas.v1";
 const POR_VEZ = 60;          // quantas mostra antes de "mostrar mais"
 
+/* Os dados moram noutro repositório.
+ *
+ * Não é organização: são 555 MB refeitos a cada trimestre, e no mesmo lugar do
+ * código eles inchariam o histórico para sempre. Separados, o repositório de
+ * dados é substituído inteiro a cada remontagem e nunca cresce.
+ *
+ * Rodando na própria máquina, os arquivos estão em `dados/` ao lado — e é bom
+ * que continue assim, para dar para mexer sem depender da internet. */
+const DADOS = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname)
+  ? "dados"
+  : "https://laelson587-design.github.io/rota-dados";
+
 let indice = null;           // dados/cidades.json
 let nomesCnae = {};          // dados/cnaes.json
 let empresas = [];           // a cidade carregada
@@ -78,13 +90,13 @@ const tamanho = (n) => n < 1024 ? n + " B"
 
 async function comecar() {
   try {
-    const r = await fetch("dados/cidades.json");
+    const r = await fetch(`${DADOS}/cidades.json`);
     indice = await r.json();
   } catch (e) {
     return avisar("Não consegui ler a lista de cidades.");
   }
 
-  fetch("dados/cnaes.json").then((r) => r.json()).then((n) => { nomesCnae = n; }).catch(() => {});
+  fetch(`${DADOS}/cnaes.json`).then((r) => r.json()).then((n) => { nomesCnae = n; }).catch(() => {});
 
   const [ano, mes] = (indice.base || "").split("-");
   if (ano) $("#base-mes").textContent = `Base de ${mes}/${ano}.`;
@@ -191,7 +203,7 @@ async function montarRoteiro() {
   $("#buscar").textContent = "Baixando…";
 
   try {
-    const r = await fetch(`dados/${cidade}-${profissaoEscolhida}${fatia.sufixo}.txt`);
+    const r = await fetch(`${DADOS}/${cidade}-${profissaoEscolhida}${fatia.sufixo}.txt`);
     if (!r.ok) throw new Error("arquivo não encontrado");
     const texto = await r.text();
     empresas = texto.split("\n").filter(Boolean).map((l) => {
