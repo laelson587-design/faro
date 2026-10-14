@@ -1,0 +1,14 @@
+{
+  "name": "faro",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Faro: quem visitar hoje, e por quê. Todos os direitos reservados.",
+  "scripts": {
+    "build": "node scripts/publicar.js",
+    "servir": "node scripts/servir.js"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^5.9.0"
+  }
+}

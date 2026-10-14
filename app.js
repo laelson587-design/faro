@@ -70,6 +70,92 @@ function marcarVisitada(cnpj, marcar) {
   catch (e) { avisar("Este navegador não deixou guardar a marcação."); }
 }
 
+// ------------------------------------------------- a mudança de endereço
+
+/* Em 14/10/2026 o Faro saiu do GitHub Pages para o Vercel, com o código
+ * embaralhado e o repositório fechado. O que está guardado no aparelho fica
+ * preso ao endereço: o app novo abriria com as visitadas zeradas, e a lista
+ * de quem já disse não voltaria inteira.
+ *
+ * Redirecionar levando as marcações no link não basta no iPhone: o ícone da
+ * Tela de Início guarda os dados separado do Safari (a armadilha que o Tino
+ * já ensinou), então elas cairiam no Safari e o ícone novo abriria vazio. Por
+ * isso são dois caminhos: o link, que resolve quem usa pelo navegador, e a
+ * área de copiar e colar, que é a mesma no celular inteiro e resolve o ícone.
+ * Em qualquer um, o novo JUNTA com o que já tiver — nunca substitui. */
+const ENDERECO_NOVO = "https://faro-eta.vercel.app/";
+const MARCA_MUDANCA = "FARO-MUDANCA:";
+
+const pacoteDaMudanca = () => JSON.stringify({ v: [...visitadas()], u: localStorage.getItem("rota.ultima") || "" });
+
+/* No endereço antigo, no lugar do app, só o aviso e o botão. */
+function avisarMudanca() {
+  if (!location.hostname.endsWith("github.io")) return false;
+  const n = visitadas().size;
+  document.body.innerHTML = `<section class="tela ativa"><div class="corpo">
+    <h1>Faro</h1>
+    <p class="chamada">O Faro mudou de endereço.</p>
+    <button id="mudar" class="principal">${n ? `Levar minhas ${n} marcaç${n > 1 ? "ões" : "ão"} e abrir o novo` : "Abrir o endereço novo"}</button>
+    ${n ? `<p class="dica">As marcações vão copiadas. <b>No iPhone:</b> no endereço novo, toque em Compartilhar › Adicionar à Tela de Início, abra pelo ícone novo e toque em <b>Colar marcações do endereço antigo</b>. Depois apague o ícone antigo.</p>` : ""}
+    <p class="dica">Endereço novo: ${ENDERECO_NOVO.replace("https://", "").replace(/\/$/, "")}</p>
+    <div id="aviso" class="aviso oculto"></div></div></section>`;
+  $("#mudar").addEventListener("click", async () => {
+    const pacote = pacoteDaMudanca();
+    if (n) { try { await navigator.clipboard.writeText(MARCA_MUDANCA + pacote); } catch (e) {} }
+    location.href = ENDERECO_NOVO + (n ? "#trazer=" + encodeURIComponent(pacote) : "");
+  });
+  return true;
+}
+
+function juntarMarcacoes(texto) {
+  const p = JSON.parse(texto || "{}");
+  const v = visitadas(), antes = v.size;
+  for (const c of p.v || []) v.add(c);
+  localStorage.setItem(CHAVE_VISITADAS, JSON.stringify([...v]));
+  if (p.u && !localStorage.getItem("rota.ultima")) localStorage.setItem("rota.ultima", p.u);
+  return v.size - antes;
+}
+
+const recadoTrazidas = (n) => n
+  ? `Trouxe ${n} empresa${n > 1 ? "s" : ""} marcada${n > 1 ? "s" : ""} como visitada.`
+  : "Essas marcações já estavam aqui.";
+
+/* Caminho do navegador: as marcações chegam no link. Lê ANTES de limpar o
+   link, e limpa para recarregar não importar de novo. */
+function trazerPeloLink() {
+  if (!location.hash.startsWith("#trazer=")) return false;
+  const bruto = location.hash.slice(8);
+  history.replaceState(null, "", location.pathname + location.search);
+  try {
+    const n = juntarMarcacoes(decodeURIComponent(bruto));
+    setTimeout(() => avisar(recadoTrazidas(n)), 600);
+    return true;
+  } catch (e) {
+    avisar("Não consegui trazer as marcações do endereço antigo.");
+    return false;
+  }
+}
+
+/* Caminho do ícone: o botão aparece enquanto não houver marcação nenhuma
+   neste endereço e a pessoa não tiver dispensado. Colar pede um toque —
+   o navegador só entrega a área de copiar e colar com o dedo na tela. */
+function oferecerColar() {
+  let dispensou = false;
+  try { dispensou = localStorage.getItem("faro.mudanca.dispensada") === "1"; } catch (e) {}
+  $("#colar-mudanca").classList.toggle("oculto", dispensou || visitadas().size > 0);
+}
+
+async function colarMudanca() {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (!t.startsWith(MARCA_MUDANCA)) return avisar("Não achei as marcações. Abra o endereço antigo e toque no botão de levar de novo.");
+    avisar(recadoTrazidas(juntarMarcacoes(t.slice(MARCA_MUDANCA.length))));
+    $("#colar-mudanca").classList.add("oculto");
+  } catch (e) {
+    avisar("O celular não deixou colar. Tente de novo e toque em Colar quando ele perguntar.");
+  }
+}
+
 // ----------------------------------------------------------------- ajudas
 
 let relogioAviso = null;
@@ -538,6 +624,15 @@ function irPara(tela) {
 // ------------------------------------------------------------- ligações
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (avisarMudanca()) return;
+  trazerPeloLink();
+  oferecerColar();
+  $("#colar-mudanca-sim").addEventListener("click", colarMudanca);
+  $("#colar-mudanca-nao").addEventListener("click", () => {
+    try { localStorage.setItem("faro.mudanca.dispensada", "1"); } catch (e) {}
+    $("#colar-mudanca").classList.add("oculto");
+  });
+
   ["#so-telefone", "#so-novas", "#esconder-visitadas"].forEach((s) =>
     $(s).addEventListener("change", () => { mostrando = POR_VEZ; pintar(); }));
 

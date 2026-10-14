@@ -1,0 +1,6 @@
+node_modules
+dist
+dados
+.cache
+scripts/perfil*
+*.log

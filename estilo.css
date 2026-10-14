@@ -299,3 +299,12 @@ button, .secundario {
 .socios li:first-child { border-top: none; padding-top: 0; }
 .socios b { display: block; font-size: 15px; }
 .socios span { font-size: 13px; color: var(--tenue); }
+
+/* O aviso da mudança de endereço, no topo da escolha. Some sozinho quando há
+   marcação neste endereço, ou quando a pessoa diz que não usava. */
+.mudanca {
+  margin: 0 0 18px; padding: 14px; border-radius: var(--raio);
+  background: var(--marca-fraca); border: 1px solid var(--marca);
+}
+.mudanca p { margin: 0 0 10px; font-weight: 600; }
+.mudanca .secundario { display: block; width: 100%; margin-top: 8px; padding: 12px; }

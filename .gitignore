@@ -11,3 +11,9 @@ dados/
 # Entrou num commit por descuido: sao centenas de arquivos de banco de dados
 # do navegador, que nao tem nada a ver com o projeto.
 .chrome-icone/
+node_modules
+dist
+.vercel
+
+.vercel
+.env*

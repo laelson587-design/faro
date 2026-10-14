@@ -375,6 +375,7 @@ function htmlEndereco(d, c, erro) {
 /* ------------------------------------------------------------- ligações */
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (!$("#ficha-voltar")) return;   // endereço antigo: a tela é só o aviso da mudança
   $("#ficha-voltar").addEventListener("click", () => history.back());
   window.addEventListener("popstate", () => {
     if ($("#tela-ficha").classList.contains("ativa")) fecharFicha();

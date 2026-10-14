@@ -11,7 +11,16 @@ antes era o [Acervo](../Acervo) e desde outubro/2026 mora aqui).
 
 ```
 node scripts/servir.js     # http://localhost:3010
+npm run build              # dist/, com o código embaralhado
 ```
+
+No ar em **https://faro-eta.vercel.app** desde 14/10/2026 (antes era GitHub
+Pages). O Vercel roda `npm run build` a cada push e publica `dist/`: os três
+scripts viram um arquivo só, embaralhado (`scripts/publicar.js`), para a
+leitura e as ofertas não saírem copiadas de graça. Os **dados continuam no
+GitHub Pages** (`faro-dados`, público): são dado aberto da Receita, não o que
+se protege. O endereço antigo mostra o aviso da mudança e leva as marcações
+de "Visitei" (pelo link e pela área de copiar e colar, por causa do iPhone).
 
 Sem dependência nenhuma — só o Node 24.
 
