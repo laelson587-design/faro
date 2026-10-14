@@ -58,8 +58,10 @@ select { appearance: none; background-image: none; }
 }
 .marcavel input { width: 22px; height: 22px; flex: none; accent-color: var(--marca); }
 
+/* color explícito: botão não herda a cor do texto, e no fundo escuro os
+   nomes das profissões e dos bairros saíam quase pretos. */
 button, .secundario {
-  font: inherit; cursor: pointer; text-decoration: none;
+  font: inherit; color: var(--texto); cursor: pointer; text-decoration: none;
   border-radius: var(--raio); border: 1px solid var(--borda);
 }
 
@@ -190,14 +192,17 @@ button, .secundario {
 
 .escolha-bairro { margin-top: 12px; }
 .bairros-cartoes {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0;
 }
+/* minmax(0, …) e a quebra no meio da palavra: sem isso um bairro como
+   "JARDIM PAULISTANO" alargava a coluna e a tela inteira ficava solta para o
+   lado. */
 .cartao-bairro {
   display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
   padding: 15px 14px; text-align: left;
   background: var(--carta); border: 1px solid var(--borda);
 }
-.cartao-bairro .nome { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.cartao-bairro .nome { font-size: 15px; font-weight: 700; line-height: 1.25; max-width: 100%; overflow-wrap: anywhere; }
 .cartao-bairro .quantas { font-size: 13px; color: var(--marca); font-weight: 600; }
 
 /* ---------------------------------------------------------- a rota do dia */
@@ -215,7 +220,7 @@ button, .secundario {
 .acoes .na-rota { border-color: var(--marca); color: var(--marca); background: var(--marca-fraca); }
 
 @media (min-width: 640px) {
-  .bairros-cartoes { grid-template-columns: repeat(3, 1fr); }
+  .bairros-cartoes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* O botão que reabre os cartões de bairro. Largo porque é a troca mais

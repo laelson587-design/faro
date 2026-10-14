@@ -444,6 +444,7 @@ function pintar() {
 
   $("#escolha-bairro").classList.add("oculto");
   $("#barra-bairros").classList.add("oculto");
+  $("#trocar-bairro").classList.remove("oculto");
   pintarBotaoDeBairro();
   const lista = filtradas();
   const jaFui = visitadas();
@@ -573,6 +574,9 @@ function pintarEscolhaDeBairro() {
     ? "Escolha outro bairro, ou veja a cidade inteira."
     : "São muitas para uma lista só. Comece por um bairro — dá para trocar depois.";
   $("#escolha-bairro").classList.remove("oculto");
+  /* Escolhendo o bairro, o botão de trocar bairro não tem o que dizer e
+     aparecia vazio no topo. */
+  $("#trocar-bairro").classList.add("oculto");
   $("#lista").innerHTML = "";
   $("#mais").classList.add("oculto");
   $("#barra-rota").classList.add("oculto");
