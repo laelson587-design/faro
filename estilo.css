@@ -235,3 +235,67 @@ button, .secundario {
 }
 .cartao-bairro.marcado .nome { color: var(--marca); }
 .cartao-bairro.marcado .nome::before { content: "✓ "; }
+
+/* ------------------------------------------------------------ a ficha
+
+   O que antes era o Acervo. Cada bloco aparece quando a fonte dele
+   responde: o cadastro em um ou dois segundos, o e-mail depois. Bloco que
+   falha diz por quê e não derruba os outros. */
+
+:root { --pare: #ff7b72; }
+
+.topo .cnpj {
+  padding: 0; border: none; background: none; color: var(--tenue);
+  font-size: 14px; text-align: left;
+}
+#ficha-titulo { line-height: 1.25; }
+
+.bloco {
+  padding: 14px; margin-bottom: 12px;
+  background: var(--carta); border: 1px solid var(--borda); border-radius: var(--raio);
+}
+.bloco h3 { margin: 0 0 10px; font-size: 13px; }
+.bloco p { margin: 0; }
+.bloco .acoes { margin-top: 10px; }
+.carregando { color: var(--tenue); font-size: 14px; }
+.falhou { color: var(--atencao); font-size: 14px; }
+
+.selo {
+  display: inline-block; margin-bottom: 10px !important; padding: 4px 10px;
+  border-radius: 99px; font-size: 13px; font-weight: 700;
+}
+.selo.ok { color: var(--bom); background: #102a1e; }
+.selo.pare { color: var(--pare); background: #2c1513; }
+
+.pares { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+.pares dt { color: var(--tenue); }
+.pares dd { margin: 0; overflow-wrap: anywhere; }
+
+.mais-ativ { margin-top: 10px; font-size: 14px; color: var(--fraco); }
+.mais-ativ summary { cursor: pointer; color: var(--marca); font-weight: 600; }
+.mais-ativ ul { margin: 8px 0 0; padding-left: 18px; }
+
+/* A leitura: a cor diz o peso antes de a pessoa ler. */
+.ponto { padding: 10px 12px; margin-top: 8px; border-radius: 10px; border-left: 3px solid var(--tenue); background: #1d2128; }
+.ponto:first-of-type { margin-top: 0; }
+.ponto b { display: block; font-size: 15px; margin-bottom: 3px; }
+.ponto p { font-size: 14px; color: var(--fraco); }
+.ponto.pare { border-left-color: var(--pare); }
+.ponto.pare b { color: var(--pare); }
+.ponto.atencao { border-left-color: var(--atencao); }
+.ponto.atencao b { color: var(--atencao); }
+.ponto.bom { border-left-color: var(--bom); }
+.ponto.bom b { color: var(--bom); }
+
+.oferta { padding: 10px 0; border-top: 1px solid var(--borda); }
+.oferta:first-child { border-top: none; padding-top: 0; }
+.oferta b { font-size: 16px; color: var(--marca); }
+.oferta p { font-size: 14px; color: var(--fraco); margin-top: 3px; }
+/* O que falar na porta, no mesmo tom do "porquê" do roteiro. */
+.oferta .abordagem { font-style: italic; color: var(--atencao); }
+
+.socios { list-style: none; margin: 0; padding: 0; }
+.socios li { padding: 8px 0; border-top: 1px solid var(--borda); }
+.socios li:first-child { border-top: none; padding-top: 0; }
+.socios b { display: block; font-size: 15px; }
+.socios span { font-size: 13px; color: var(--tenue); }

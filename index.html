@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Faro — quem visitar hoje</title>
 <meta name="theme-color" content="#101216">
-<link rel="stylesheet" href="estilo.css?v=4">
+<link rel="stylesheet" href="estilo.css?v=5">
 
 <!-- O endereco do icone vai versionado: sem isso o Safari nunca larga o
      antigo, licao que o Tino ja tinha aprendido. -->
-<link rel="icon" href="icone-192.png?v=4">
-<link rel="apple-touch-icon" href="icone-192.png?v=4">
-<link rel="manifest" href="manifest.json?v=4">
+<link rel="icon" href="icone-192.png?v=5">
+<link rel="apple-touch-icon" href="icone-192.png?v=5">
+<link rel="manifest" href="manifest.json?v=5">
 </head>
 <body>
 
@@ -127,9 +127,23 @@
   </div>
 </section>
 
+<!-- A ficha da empresa: o que antes era o Acervo. Consultada na hora, direto
+     do celular, e nada fica guardado. -->
+<section id="tela-ficha" class="tela">
+  <header class="topo">
+    <button id="ficha-voltar" class="icone" aria-label="Voltar">←</button>
+    <div>
+      <h2 id="ficha-titulo"></h2>
+      <button id="ficha-cnpj" class="sub cnpj" data-cnpj=""></button>
+    </div>
+  </header>
+  <div class="corpo" id="ficha-corpo"></div>
+</section>
+
 <div id="aviso" class="aviso oculto"></div>
 
-<script src="ramos.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="ramos.js?v=5"></script>
+<script src="app.js?v=5"></script>
+<script src="ficha.js?v=5"></script>
 </body>
 </html>

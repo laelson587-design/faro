@@ -5,9 +5,9 @@ Quem visitar hoje, e por quê.
 O nome é o que o app entrega: **ter faro** é enxergar onde vale a pena bater.
 Você não compra uma lista — compra a capacidade de farejar quem abre a porta.
 
-O [Acervo](../Acervo) responde *"o que é esta empresa"* — você traz o CNPJ. O
-Faro responde a pergunta de antes: **"quais empresas"**. Para quem vende de
-porta em porta e não tem lista nenhuma.
+Responde as duas perguntas de quem vende de porta em porta e não tem lista
+nenhuma: **"quais empresas"** (o roteiro) e **"o que é esta"** (a ficha, que
+antes era o [Acervo](../Acervo) e desde outubro/2026 mora aqui).
 
 ```
 node scripts/servir.js     # http://localhost:3010
@@ -64,8 +64,32 @@ Lista de 800 linhas dá a mesma paralisia de não ter lista nenhuma. Por isso:
 - **O peso do download aparece antes de baixar** — ninguém gosta de surpresa
   no 4G
 
-Tocar no CNPJ copia. Cola no Acervo e sai a situação cadastral, os sócios e as
-sanções, ao vivo. **Aqui é onde procurar; lá é com quem dá para fechar.**
+## A ficha: o Acervo, dentro do Faro
+
+Cada empresa do roteiro tem o botão **Ficha**. Antes ele copiava o CNPJ para
+colar no Acervo — que só rodava com o notebook ligado e na mesma wi-fi, então
+na rua a segunda metade do trabalho não existia.
+
+A ficha é consultada **na hora, direto do celular**, e nada fica guardado:
+
+| bloco | de onde vem |
+| --- | --- |
+| Situação na Receita | BrasilAPI, com a Minha Receita de reserva (alternam) |
+| O que isso quer dizer | dos campos do cadastro — não consulta nada |
+| O que cabe oferecer | do cadastro e da tabela de `ramos.js` |
+| Quem responde | quadro societário da mesma consulta (sem CPF) |
+| Telefone e e-mail | o cadastro tira o e-mail; a CNPJ.ws completa, só quando faltou |
+| Endereço conferido | CEP na BrasilAPI contra a cidade declarada |
+
+Continua sem servidor porque essas fontes aceitam ser chamadas pelo navegador
+(conferido em 13/10/2026). **Ficaram de fora**, para quando houver servidor:
+as **sanções** (a chave do Portal da Transparência no navegador seria chave
+pública), o **cadastro de fornecedores do governo** e a **ReceitaWS** (as duas
+recusam o navegador) e a **lista de 300 CNPJs** em planilha. Isso continua no
+Acervo, que vira o cadeado do produto no dia de cobrar.
+
+A tabela de ramos agora é uma só, a de `ramos.js`, para o roteiro e para a
+ficha. A do Acervo só importa de novo quando o servidor voltar a ser usado.
 
 ## Montar os dados
 

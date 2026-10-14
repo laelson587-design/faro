@@ -405,7 +405,7 @@ function pintar() {
                href="${escapar(linkDoMapa(paraMapa(e, cidadeDaTela())))}">No mapa</a>
             <button class="secundario ${naRota ? "na-rota" : ""}" data-parada="${escapar(e.cnpj)}">${
               naRota ? "Na rota ✓" : "+ rota"}</button>
-            <button class="secundario" data-cnpj="${escapar(e.cnpj)}">${escapar(cnpjBonito(e.cnpj))}</button>
+            <button class="secundario" data-ficha="${escapar(e.cnpj)}">Ficha</button>
             <button class="secundario visitar" data-visitar="${escapar(e.cnpj)}">${fui ? "Desmarcar" : "Visitei"}</button>
           </div>
         </div>`);
@@ -615,16 +615,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* O CNPJ copiado é a ponte para o Acervo: cola lá e sai a situação
-       cadastral, os sócios e as sanções, ao vivo. Aqui é onde procurar; lá é
-       com quem se pode fechar. */
-    const copiar = ev.target.closest("[data-cnpj]");
-    if (copiar) {
-      const cnpj = copiar.dataset.cnpj;
-      navigator.clipboard?.writeText(cnpj)
-        .then(() => avisar("CNPJ copiado — cole no Acervo para a ficha completa."))
-        .catch(() => avisar("Não consegui copiar."));
-    }
+    /* A ficha é o que antes exigia copiar o CNPJ e colar no Acervo. Aqui é
+       onde procurar; na ficha, com quem dá para fechar. */
+    const ficha = ev.target.closest("[data-ficha]");
+    if (ficha) abrirFicha(ficha.dataset.ficha);
   });
 
   comecar();
